@@ -42,6 +42,11 @@ uv sync --dev               # Sync with development dependencies
 - **GitHub Actions**: Runs same checks on PRs - should never fail if run locally
 - **IDE integration**: Configure your editor to run formatters on save
 
+## Environment Configuration
+- **ALWAYS use dotenv**: Use `from dotenv import load_dotenv; load_dotenv()` for environment variables, never use `os.getenv()` directly
+- **Never hardcode secrets**: All API keys, emails, and sensitive data must come from .env files
+- **Environment precedence**: Constructor params > environment variables > sensible defaults
+
 ## FORBIDDEN Patterns
 - Mock data generation for integration tests
 - Simulated API responses

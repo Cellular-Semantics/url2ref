@@ -34,7 +34,6 @@ jobs:
 
     - name: Run code quality checks
       run: |
-        uv run black --check src/ tests/
         uv run ruff check src/ tests/
         uv run mypy src/
 

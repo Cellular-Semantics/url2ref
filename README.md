@@ -1,6 +1,6 @@
 # lit-agent
 
-[![Tests](https://github.com/dosumis/lit_agent/actions/workflows/test.yml/badge.svg)](https://github.com/dosumis/lit_agent/actions/workflows/test.yml)
+[![Tests](https://github.com/dosumis/lit_agent/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/dosumis/lit_agent/actions/workflows/test.yml)
 [![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dosumis/lit_agent/main/.github/badges/coverage.json)](https://github.com/dosumis/lit_agent/actions/workflows/test.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -42,6 +42,9 @@ cp .env.example .env
 # Edit .env and add your API keys
 OPENAI_API_KEY=your_openai_key_here
 ANTHROPIC_API_KEY=your_anthropic_key_here
+
+# For academic identifier validation (optional)
+NCBI_EMAIL=your_email@domain.com  # Should be registered with NCBI
 ```
 
 ### Basic Usage

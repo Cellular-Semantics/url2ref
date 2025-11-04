@@ -1,0 +1,126 @@
+# URL patterns for academic identifier extraction
+# This file defines patterns for extracting DOI, PMID, and PMC identifiers from URLs
+
+# PMID extraction patterns
+pmid_patterns:
+  - pattern: 'pubmed\.ncbi\.nlm\.nih\.gov/(\d{1,8})/?'
+    confidence: 0.98
+    description: "Standard PubMed URLs"
+
+  - pattern: 'ncbi\.nlm\.nih\.gov/pubmed/(\d{1,8})/?'
+    confidence: 0.98
+    description: "Alternative PubMed URLs"
+
+  - pattern: 'ncbi\.nlm\.nih\.gov/entrez/query\.fcgi\?.*pmid[=:](\d{1,8})'
+    confidence: 0.95
+    description: "Legacy Entrez URLs with PMID"
+
+  - pattern: 'pmid[:\s=](\d{1,8})'
+    confidence: 0.85
+    description: "PMID in text format"
+
+# PMC extraction patterns
+pmc_patterns:
+  - pattern: 'pmc\.ncbi\.nlm\.nih\.gov/articles/(PMC\d+)/?'
+    confidence: 0.98
+    description: "Standard PMC URLs"
+
+  - pattern: 'ncbi\.nlm\.nih\.gov/pmc/articles/(PMC\d+)/?'
+    confidence: 0.98
+    description: "Alternative PMC URLs"
+
+  - pattern: 'pmc[:\s=](PMC\d+)'
+    confidence: 0.85
+    description: "PMC in text format"
+
+# DOI extraction patterns
+doi_patterns:
+  - pattern: 'doi\.org/(10\.\d+/[^\s\'"<>]+)'
+    confidence: 0.99
+    description: "Official DOI URLs"
+
+  - pattern: 'dx\.doi\.org/(10\.\d+/[^\s\'"<>]+)'
+    confidence: 0.99
+    description: "CrossRef DOI URLs"
+
+  - pattern: '/doi/(10\.\d+/[^\s\'"<>]+)'
+    confidence: 0.95
+    description: "DOI in journal URLs"
+
+  - pattern: '10\.\d+/[^\s\'"<>/?]+'
+    confidence: 0.80
+    description: "Bare DOI format"
+
+  - pattern: 'doi[:\s=](10\.\d+/[^\s\'"<>]+)'
+    confidence: 0.85
+    description: "DOI with prefix in text"
+
+# Journal-specific patterns
+journal_patterns:
+  nature:
+    domains: ["nature.com", "www.nature.com"]
+    pattern: 'nature\.com/articles/([^/?]+)'
+    doi_prefix: "10.1038/"
+    confidence: 0.90
+
+  science:
+    domains: ["science.org", "www.science.org"]
+    pattern: 'science\.org/doi/(?:abs/|full/)?(10\.\d+/[^/?]+)'
+    confidence: 0.95
+
+  wiley:
+    domains: ["onlinelibrary.wiley.com"]
+    pattern: 'onlinelibrary\.wiley\.com/doi/(?:abs/|full/)?(10\.\d+/[^/?]+)'
+    confidence: 0.95
+
+  springer:
+    domains: ["link.springer.com", "springer.com"]
+    pattern: 'link\.springer\.com/(?:article/)?(?:10\.\d+/)?([^/?]+)'
+    confidence: 0.90
+
+  elsevier:
+    domains: ["sciencedirect.com", "www.sciencedirect.com"]
+    pattern: 'sciencedirect\.com/science/article/[^/]+/([^/?]+)'
+    confidence: 0.85
+
+  pnas:
+    domains: ["pnas.org", "www.pnas.org"]
+    pattern: 'pnas\.org/doi/(?:abs/|full/)?(10\.\d+/[^/?]+)'
+    confidence: 0.95
+
+  cell:
+    domains: ["cell.com", "www.cell.com"]
+    pattern: 'cell\.com/[^/]+/(?:fulltext/)?([^/?]+)'
+    confidence: 0.85
+
+  biorxiv:
+    domains: ["biorxiv.org", "www.biorxiv.org"]
+    pattern: 'biorxiv\.org/content/(?:early/)?(?:\d{4}/\d{2}/\d{2}/)?(?:10\.1101/)?([^/?]+)'
+    doi_prefix: "10.1101/"
+    confidence: 0.95
+
+# Validation settings
+validation:
+  api:
+    enabled: true
+    timeout: 10
+    rate_limit: 0.5  # seconds between requests
+
+  metapub:
+    enabled: true
+
+  format:
+    enabled: true
+
+# Confidence thresholds
+confidence_thresholds:
+  high: 0.90
+  medium: 0.70
+  low: 0.50
+
+# Pattern processing settings
+processing:
+  url_decode: true
+  case_insensitive: true
+  max_url_length: 2048
+  timeout: 30  # seconds for processing
