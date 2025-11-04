@@ -17,7 +17,7 @@ class TestAgentConnection:
     def test_agent_connection_is_abstract(self):
         """Test that AgentConnection cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            AgentConnection()
+            AgentConnection("test-model")
 
     def test_agent_connection_requires_model(self):
         """Test that concrete agents require a model."""
