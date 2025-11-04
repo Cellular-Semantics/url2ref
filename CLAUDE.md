@@ -18,10 +18,14 @@ uv run pytest -m unit           # Unit tests only
 uv run pytest -m integration    # Integration tests only
 uv run pytest --cov             # With coverage
 
-# Check code quality
+# Code quality (run before committing!)
 uv run black src/ tests/        # Format code
-uv run ruff check src/ tests/   # Lint code
+uv run ruff check --fix src/ tests/   # Lint and auto-fix
 uv run mypy src/                # Type checking
+
+# Pre-commit hooks (recommended)
+uv run pre-commit install       # Install git hooks
+uv run pre-commit run --all-files   # Run on all files
 
 # Add new dependencies
 uv add requests              # Add runtime dependency
@@ -31,6 +35,12 @@ uv add --dev pytest         # Add development dependency
 uv sync                      # Sync dependencies (production only)
 uv sync --dev               # Sync with development dependencies
 ```
+
+## Code Quality Strategy
+- **Pre-commit hooks**: Auto-run black/ruff/mypy before each commit
+- **Local checks**: Always run `black` and `ruff --fix` before pushing
+- **GitHub Actions**: Runs same checks on PRs - should never fail if run locally
+- **IDE integration**: Configure your editor to run formatters on save
 
 ## FORBIDDEN Patterns
 - Mock data generation for integration tests

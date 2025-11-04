@@ -2,7 +2,7 @@
 
 import os
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Optional
 
 import litellm
 from dotenv import load_dotenv
@@ -45,7 +45,9 @@ class AgentConnection(ABC):
 class LiteLLMAgent(AgentConnection):
     """Agent implementation using LiteLLM for unified API access."""
 
-    def __init__(self, model: str, api_key: Optional[str] = None, max_tokens: int = 150):
+    def __init__(
+        self, model: str, api_key: Optional[str] = None, max_tokens: int = 150
+    ):
         """Initialize LiteLLM agent.
 
         Args:
@@ -73,7 +75,7 @@ class LiteLLMAgent(AgentConnection):
             completion_params = {
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": self.max_tokens
+                "max_tokens": self.max_tokens,
             }
 
             # Add API key if provided (LiteLLM will use env vars otherwise)
@@ -117,7 +119,9 @@ class AnthropicAgent(LiteLLMAgent):
         super().__init__(model=model, api_key=api_key)
 
 
-def create_agent_from_env(provider: str, model: Optional[str] = None) -> AgentConnection:
+def create_agent_from_env(
+    provider: str, model: Optional[str] = None
+) -> AgentConnection:
     """Create an agent from environment variables.
 
     Args:
@@ -144,7 +148,7 @@ def create_agent_from_env(provider: str, model: Optional[str] = None) -> AgentCo
         return AnthropicAgent(api_key, model_name)
     else:
         # Check if it looks like a valid model name
-        valid_prefixes = ['gpt', 'claude', 'gemini', 'llama', 'mistral', 'command']
+        valid_prefixes = ["gpt", "claude", "gemini", "llama", "mistral", "command"]
         if any(provider.lower().startswith(prefix) for prefix in valid_prefixes):
             return LiteLLMAgent(model=provider)
         else:

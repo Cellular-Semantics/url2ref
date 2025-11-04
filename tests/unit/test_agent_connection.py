@@ -2,7 +2,12 @@
 
 import pytest
 from unittest.mock import Mock, patch
-from lit_agent.agent_connection import AgentConnection, OpenAIAgent, AnthropicAgent, LiteLLMAgent
+from lit_agent.agent_connection import (
+    AgentConnection,
+    OpenAIAgent,
+    AnthropicAgent,
+    LiteLLMAgent,
+)
 
 
 @pytest.mark.unit
@@ -41,7 +46,7 @@ class TestLiteLLMAgent:
         assert agent.api_key == "test-key"
         assert agent.max_tokens == 300
 
-    @patch('litellm.completion')
+    @patch("litellm.completion")
     def test_litellm_agent_query(self, mock_completion):
         """Test LiteLLM agent can make queries."""
         mock_response = Mock()
@@ -57,10 +62,10 @@ class TestLiteLLMAgent:
         mock_completion.assert_called_once_with(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": "Hello world coding example"}],
-            max_tokens=150
+            max_tokens=150,
         )
 
-    @patch('litellm.completion')
+    @patch("litellm.completion")
     def test_litellm_agent_query_error(self, mock_completion):
         """Test LiteLLM agent handles query errors."""
         mock_completion.side_effect = Exception("API Error")
@@ -94,7 +99,7 @@ class TestOpenAIAgent:
         with pytest.raises(ValueError, match="API key is required"):
             OpenAIAgent(api_key="")
 
-    @patch('litellm.completion')
+    @patch("litellm.completion")
     def test_openai_agent_query(self, mock_completion):
         """Test OpenAI agent can make queries via LiteLLM."""
         mock_response = Mock()
@@ -133,7 +138,7 @@ class TestAnthropicAgent:
         with pytest.raises(ValueError, match="API key is required"):
             AnthropicAgent(api_key="")
 
-    @patch('litellm.completion')
+    @patch("litellm.completion")
     def test_anthropic_agent_query(self, mock_completion):
         """Test Anthropic agent can make queries via LiteLLM."""
         mock_response = Mock()
@@ -153,44 +158,44 @@ class TestAnthropicAgent:
 class TestAgentFactory:
     """Test the agent factory functionality."""
 
-    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-openai-key'})
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-openai-key"})
     def test_create_openai_agent_from_env(self):
         """Test creating OpenAI agent from environment variables."""
         from lit_agent.agent_connection import create_agent_from_env
 
-        agent = create_agent_from_env('openai')
+        agent = create_agent_from_env("openai")
         assert isinstance(agent, OpenAIAgent)
-        assert agent.api_key == 'test-openai-key'
+        assert agent.api_key == "test-openai-key"
 
-    @patch.dict('os.environ', {'ANTHROPIC_API_KEY': 'test-anthropic-key'})
+    @patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-anthropic-key"})
     def test_create_anthropic_agent_from_env(self):
         """Test creating Anthropic agent from environment variables."""
         from lit_agent.agent_connection import create_agent_from_env
 
-        agent = create_agent_from_env('anthropic')
+        agent = create_agent_from_env("anthropic")
         assert isinstance(agent, AnthropicAgent)
-        assert agent.api_key == 'test-anthropic-key'
+        assert agent.api_key == "test-anthropic-key"
 
-    @patch.dict('os.environ', {'OPENAI_API_KEY': 'test-openai-key'})
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-openai-key"})
     def test_create_agent_with_custom_model(self):
         """Test creating agent with custom model."""
         from lit_agent.agent_connection import create_agent_from_env
 
-        agent = create_agent_from_env('openai', model='gpt-4')
+        agent = create_agent_from_env("openai", model="gpt-4")
         assert isinstance(agent, OpenAIAgent)
-        assert agent.model == 'gpt-4'
+        assert agent.model == "gpt-4"
 
     def test_create_agent_direct_model(self):
         """Test creating agent using model name directly."""
         from lit_agent.agent_connection import create_agent_from_env
 
-        agent = create_agent_from_env('gpt-3.5-turbo')
+        agent = create_agent_from_env("gpt-3.5-turbo")
         assert isinstance(agent, LiteLLMAgent)
-        assert agent.model == 'gpt-3.5-turbo'
+        assert agent.model == "gpt-3.5-turbo"
 
     def test_create_agent_invalid_provider(self):
         """Test creating agent with invalid provider raises error."""
         from lit_agent.agent_connection import create_agent_from_env
 
         with pytest.raises(ValueError, match="Unsupported provider"):
-            create_agent_from_env('invalid')
+            create_agent_from_env("invalid")

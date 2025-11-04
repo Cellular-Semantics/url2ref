@@ -4,7 +4,11 @@ import pytest
 import os
 import warnings
 from unittest.mock import Mock, patch
-from lit_agent.agent_connection import create_agent_from_env, OpenAIAgent, AnthropicAgent
+from lit_agent.agent_connection import (
+    create_agent_from_env,
+    OpenAIAgent,
+    AnthropicAgent,
+)
 
 
 @pytest.mark.integration
@@ -20,11 +24,11 @@ class TestOpenAIIntegration:
             warnings.warn(
                 "OPENAI_API_KEY not found - falling back to mock test. "
                 "Set OPENAI_API_KEY environment variable for real integration testing.",
-                UserWarning
+                UserWarning,
             )
 
             # Mock test
-            with patch('litellm.completion') as mock_completion:
+            with patch("litellm.completion") as mock_completion:
                 mock_response = Mock()
                 mock_response.choices = [Mock()]
                 mock_response.choices[0].message = Mock()
@@ -32,7 +36,7 @@ class TestOpenAIIntegration:
                     'Here\'s a simple "Hello, World!" program in Python:\n\n'
                     '```python\nprint("Hello, World!")\n```\n\n'
                     'This program uses the print() function to display the text "Hello, World!" to the console. '
-                    'It\'s typically the first program beginners learn when starting with Python.'
+                    "It's typically the first program beginners learn when starting with Python."
                 )
                 mock_completion.return_value = mock_response
 
@@ -41,7 +45,7 @@ class TestOpenAIIntegration:
 
                 response = agent.query(prompt)
 
-                print(f"\n--- OpenAI Hello World Response (MOCK) ---")
+                print("\n--- OpenAI Hello World Response (MOCK) ---")
                 print(response)
                 print("--- End Response ---\n")
 
@@ -56,7 +60,7 @@ class TestOpenAIIntegration:
 
             response = agent.query(prompt)
 
-            print(f"\n--- OpenAI Hello World Response (REAL API) ---")
+            print("\n--- OpenAI Hello World Response (REAL API) ---")
             print(response)
             print("--- End Response ---\n")
 
@@ -73,12 +77,12 @@ class TestOpenAIIntegration:
             # Fallback to mock with warning
             warnings.warn(
                 "OPENAI_API_KEY not found - falling back to mock test for factory function.",
-                UserWarning
+                UserWarning,
             )
 
             # Mock the environment and API call
-            with patch.dict('os.environ', {'OPENAI_API_KEY': 'mock-key'}):
-                with patch('litellm.completion') as mock_completion:
+            with patch.dict("os.environ", {"OPENAI_API_KEY": "mock-key"}):
+                with patch("litellm.completion") as mock_completion:
                     mock_response = Mock()
                     mock_response.choices = [Mock()]
                     mock_response.choices[0].message = Mock()
@@ -116,11 +120,11 @@ class TestAnthropicIntegration:
             warnings.warn(
                 "ANTHROPIC_API_KEY not found - falling back to mock test. "
                 "Set ANTHROPIC_API_KEY environment variable for real integration testing.",
-                UserWarning
+                UserWarning,
             )
 
             # Mock test
-            with patch('litellm.completion') as mock_completion:
+            with patch("litellm.completion") as mock_completion:
                 mock_response = Mock()
                 mock_response.choices = [Mock()]
                 mock_response.choices[0].message = Mock()
@@ -132,12 +136,14 @@ class TestAnthropicIntegration:
                 mock_completion.return_value = mock_response
 
                 agent = AnthropicAgent("mock-key")
-                prompt = ("What is the first recorded use of Hello World to demonstrate "
-                          "a programming language. Please provide a brief answer in 2-3 sentences.")
+                prompt = (
+                    "What is the first recorded use of Hello World to demonstrate "
+                    "a programming language. Please provide a brief answer in 2-3 sentences."
+                )
 
                 response = agent.query(prompt)
 
-                print(f"\n--- Anthropic Hello World Response (MOCK) ---")
+                print("\n--- Anthropic Hello World Response (MOCK) ---")
                 print(response)
                 print("--- End Response ---\n")
 
@@ -148,20 +154,26 @@ class TestAnthropicIntegration:
         else:
             # Real API test
             agent = AnthropicAgent(api_key)
-            prompt = ("What is the first recorded use of Hello World to demonstrate "
-                      "a programming language. Please provide a brief answer in 2-3 sentences.")
+            prompt = (
+                "What is the first recorded use of Hello World to demonstrate "
+                "a programming language. Please provide a brief answer in 2-3 sentences."
+            )
 
             response = agent.query(prompt)
 
             # Print the response for verification
-            print(f"\n--- Anthropic Hello World Response (REAL API) ---")
+            print("\n--- Anthropic Hello World Response (REAL API) ---")
             print(response)
             print("--- End Response ---\n")
 
             # Verify we got a meaningful response
             assert isinstance(response, str)
             assert len(response.strip()) > 0
-            assert "hello" in response.lower() or "kernighan" in response.lower() or "programming" in response.lower()
+            assert (
+                "hello" in response.lower()
+                or "kernighan" in response.lower()
+                or "programming" in response.lower()
+            )
 
     def test_anthropic_agent_from_env(self):
         """Test creating Anthropic agent from environment variables."""
@@ -171,12 +183,12 @@ class TestAnthropicIntegration:
             # Fallback to mock with warning
             warnings.warn(
                 "ANTHROPIC_API_KEY not found - falling back to mock test for factory function.",
-                UserWarning
+                UserWarning,
             )
 
             # Mock the environment and API call
-            with patch.dict('os.environ', {'ANTHROPIC_API_KEY': 'mock-key'}):
-                with patch('litellm.completion') as mock_completion:
+            with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "mock-key"}):
+                with patch("litellm.completion") as mock_completion:
                     mock_response = Mock()
                     mock_response.choices = [Mock()]
                     mock_response.choices[0].message = Mock()
@@ -215,11 +227,17 @@ class TestAgentFactoryIntegration:
             warnings.warn(
                 "No API keys found for OpenAI or Anthropic - falling back to mock tests. "
                 "Set OPENAI_API_KEY or ANTHROPIC_API_KEY for real integration testing.",
-                UserWarning
+                UserWarning,
             )
 
-            with patch.dict('os.environ', {'OPENAI_API_KEY': 'mock-openai-key', 'ANTHROPIC_API_KEY': 'mock-anthropic-key'}):
-                with patch('litellm.completion') as mock_completion:
+            with patch.dict(
+                "os.environ",
+                {
+                    "OPENAI_API_KEY": "mock-openai-key",
+                    "ANTHROPIC_API_KEY": "mock-anthropic-key",
+                },
+            ):
+                with patch("litellm.completion") as mock_completion:
                     mock_response = Mock()
                     mock_response.choices = [Mock()]
                     mock_response.choices[0].message = Mock()
