@@ -63,13 +63,15 @@ jobs:
     - name: Install dependencies
       run: uv sync --dev
 
-    - name: Run integration tests (if API keys available)
+    - name: Run integration tests (real API if keys available, otherwise mock with warnings)
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       run: |
+        echo "Running integration tests..."
         if [[ -n "$OPENAI_API_KEY" || -n "$ANTHROPIC_API_KEY" ]]; then
-          uv run pytest -m integration -v
+          echo "API keys detected - will use real API calls where available"
         else
-          echo "No API keys available, skipping integration tests"
+          echo "No API keys available - will fall back to mocks with warnings"
         fi
+        uv run pytest -m integration -v

@@ -56,13 +56,6 @@ class LiteLLMAgent(AgentConnection):
         super().__init__(model, api_key)
         self.max_tokens = max_tokens
 
-        # Set API key if provided
-        if api_key:
-            if model.startswith('gpt') or model.startswith('o1'):
-                os.environ["OPENAI_API_KEY"] = api_key
-            elif model.startswith('claude'):
-                os.environ["ANTHROPIC_API_KEY"] = api_key
-
     def query(self, prompt: str) -> str:
         """Query LLM using LiteLLM with unified interface.
 
@@ -76,11 +69,18 @@ class LiteLLMAgent(AgentConnection):
             Exception: If API request fails
         """
         try:
-            response = litellm.completion(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=self.max_tokens
-            )
+            # Prepare completion parameters
+            completion_params = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": self.max_tokens
+            }
+
+            # Add API key if provided (LiteLLM will use env vars otherwise)
+            if self.api_key:
+                completion_params["api_key"] = self.api_key
+
+            response = litellm.completion(**completion_params)
             return response.choices[0].message.content
         except Exception as e:
             raise Exception(f"Failed to query {self.model}: {str(e)}")
