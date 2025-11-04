@@ -1,7 +1,7 @@
 # lit-agent
 
 [![Tests](https://github.com/dosumis/lit_agent/actions/workflows/test.yml/badge.svg)](https://github.com/dosumis/lit_agent/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/dosumis/lit_agent/branch/main/graph/badge.svg)](https://codecov.io/gh/dosumis/lit_agent)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/dosumis/lit_agent/main/.github/badges/coverage.json)](https://github.com/dosumis/lit_agent/actions/workflows/test.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
