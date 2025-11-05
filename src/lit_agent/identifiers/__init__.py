@@ -16,6 +16,7 @@ from .base import (
 
 # Extractor implementations
 from .extractors import URLPatternExtractor, JournalURLExtractor
+from .web_scrapers import WebScrapingExtractor, PDFExtractor
 
 # Validator implementations
 from .validators import (
@@ -47,6 +48,8 @@ __all__ = [
     # Extractors
     "URLPatternExtractor",
     "JournalURLExtractor",
+    "WebScrapingExtractor",
+    "PDFExtractor",
     # Validators
     "CompositeValidator",
     "FormatValidator",
