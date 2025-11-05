@@ -126,18 +126,20 @@ class WebScrapingExtractor(IdentifierExtractorBase):
                     # Try property attribute
                     meta = soup.find("meta", {"property": pattern})
 
-                if meta and meta.get("content"):
-                    value = meta["content"].strip()
-                    if self._validate_identifier_format(identifier_type, value):
-                        identifiers.append(
-                            AcademicIdentifier(
-                                type=identifier_type,
-                                value=value,
-                                confidence=0.9,  # High confidence for meta tags
-                                source_url=source_url,
-                                extraction_method=ExtractionMethod.WEB_SCRAPING,
+                if meta:
+                    content = meta.get("content")
+                    if content and isinstance(content, str):
+                        value = content.strip()
+                        if self._validate_identifier_format(identifier_type, value):
+                            identifiers.append(
+                                AcademicIdentifier(
+                                    type=identifier_type,
+                                    value=value,
+                                    confidence=0.9,  # High confidence for meta tags
+                                    source_url=source_url,
+                                    extraction_method=ExtractionMethod.WEB_SCRAPING,
+                                )
                             )
-                        )
 
         return identifiers
 
@@ -150,6 +152,8 @@ class WebScrapingExtractor(IdentifierExtractorBase):
         # Find JSON-LD script tags
         for script in soup.find_all("script", type="application/ld+json"):
             try:
+                if not script.string:
+                    continue
                 data = json.loads(script.string)
                 if isinstance(data, list):
                     data = data[0]  # Take first item if it's a list
