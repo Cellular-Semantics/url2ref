@@ -66,29 +66,31 @@ def extract_identifiers_from_bibliography(
 
         # Track additional identifiers from Phase 2
         phase2_identifiers = []
-        phase2_failed_urls = []
+        successful_urls = []  # Track URLs that succeeded in Phase 2
 
-        for failed_url in result.failed_urls:
+        # Create a copy of failed_urls to avoid modifying list while iterating
+        for failed_url in result.failed_urls.copy():
             try:
                 # Choose extractor based on URL type
-                if pdf_extractor._is_pdf_url(failed_url):
+                if pdf_extractor.is_pdf_url(failed_url):
                     identifiers = pdf_extractor.extract_from_url(failed_url)
                 else:
                     identifiers = web_extractor.extract_from_url(failed_url)
 
                 if identifiers:
                     phase2_identifiers.extend(identifiers)
-                    # Remove from failed URLs since we found something
-                    if failed_url in result.failed_urls:
-                        result.failed_urls.remove(failed_url)
+                    successful_urls.append(failed_url)  # Track for removal later
                     # Update stats
                     result.extraction_stats["successful_extractions"] += 1
                     result.extraction_stats["failed_extractions"] -= 1
-                else:
-                    phase2_failed_urls.append(failed_url)
             except Exception:
                 # Keep in failed URLs if Phase 2 also fails
-                phase2_failed_urls.append(failed_url)
+                pass
+
+        # Remove successful URLs from failed_urls after iteration completes
+        for successful_url in successful_urls:
+            if successful_url in result.failed_urls:
+                result.failed_urls.remove(successful_url)
 
         # Add Phase 2 identifiers to result
         result.identifiers.extend(phase2_identifiers)

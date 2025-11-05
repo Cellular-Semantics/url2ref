@@ -165,10 +165,10 @@ class TestPDFExtractor:
 
     def test_is_pdf_url(self, extractor):
         """Test PDF URL detection."""
-        assert extractor._is_pdf_url("https://example.com/paper.pdf")
-        assert extractor._is_pdf_url("https://example.com/paper.pdf?download=1")
-        assert not extractor._is_pdf_url("https://example.com/paper.html")
-        assert not extractor._is_pdf_url("https://example.com/paper")
+        assert extractor.is_pdf_url("https://example.com/paper.pdf")
+        assert extractor.is_pdf_url("https://example.com/paper.pdf?download=1")
+        assert not extractor.is_pdf_url("https://example.com/paper.html")
+        assert not extractor.is_pdf_url("https://example.com/paper")
 
     def test_non_pdf_url_skipped(self, extractor):
         """Test that non-PDF URLs are skipped."""
