@@ -11,14 +11,15 @@ Advanced academic identifier extraction and validation system with comprehensive
 
 ## Features
 
+- 🔍 **Reference Extraction**: Extract academic references from Deepsearch results in various formats
 - 🔍 **Multi-Phase Identifier Extraction**: Extract DOI, PMID, and PMC identifiers from academic URLs using URL patterns, web scraping, and PDF text analysis
 - 🎯 **AI-Powered Topic Validation**: LLM-based relevance assessment to ensure extracted papers match your research domain (e.g., astrocyte biology)
 - 📊 **Comprehensive Validation Pipeline**: Multi-layered validation using format checking, NCBI API verification, and metapub integration
 - 📈 **Detailed Reporting & Visualization**: Interactive HTML reports with charts, statistics, and actionable recommendations
 - 🔬 **Manual Review Guidance**: Systematic sampling strategies and pause-point assessments for quality control
 - 🤖 **Unified LLM API**: Support for OpenAI, Anthropic, and 100+ other providers via LiteLLM
-- 🧪 **Test-Driven Development**: Comprehensive test suite with real API integration testing
-- ⚡ **Modern Tooling**: Built with uv, black, ruff, and pre-commit hooks
+- 📝 **Multiple Citation Formats**: Handle numbered citations ([1]), author-year (Smith et al., 2024), and plain URLs
+
 
 ## Quick Start
 
@@ -352,4 +353,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [LiteLLM](https://github.com/BerriAI/litellm) for unified LLM API access
 - Uses [uv](https://github.com/astral-sh/uv) for fast Python package management
 - Code quality maintained with [black](https://github.com/psf/black) and [ruff](https://github.com/astral-sh/ruff)
-- 
+
