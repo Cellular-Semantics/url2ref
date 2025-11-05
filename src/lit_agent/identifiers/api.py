@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 
 from .base import IdentifierType, AcademicIdentifier, IdentifierExtractionResult
 from .extractors import JournalURLExtractor
+from .web_scrapers import WebScrapingExtractor, PDFExtractor
 from .validators import CompositeValidator
 
 
@@ -58,10 +59,48 @@ def extract_identifiers_from_bibliography(
             # Use the higher of the extraction confidence or validation confidence
             identifier.confidence = max(identifier.confidence, confidence)
 
-    # TODO: Phase 2 - Add web scraping for failed URLs
+    # Phase 2 - Add web scraping for failed URLs
     if use_web_scraping and result.failed_urls:
-        # Placeholder for Phase 2 implementation
-        pass
+        web_extractor = WebScrapingExtractor()
+        pdf_extractor = PDFExtractor()
+
+        # Track additional identifiers from Phase 2
+        phase2_identifiers = []
+        phase2_failed_urls = []
+
+        for failed_url in result.failed_urls:
+            try:
+                # Choose extractor based on URL type
+                if pdf_extractor._is_pdf_url(failed_url):
+                    identifiers = pdf_extractor.extract_from_url(failed_url)
+                else:
+                    identifiers = web_extractor.extract_from_url(failed_url)
+
+                if identifiers:
+                    phase2_identifiers.extend(identifiers)
+                    # Remove from failed URLs since we found something
+                    if failed_url in result.failed_urls:
+                        result.failed_urls.remove(failed_url)
+                    # Update stats
+                    result.extraction_stats["successful_extractions"] += 1
+                    result.extraction_stats["failed_extractions"] -= 1
+                else:
+                    phase2_failed_urls.append(failed_url)
+            except Exception:
+                # Keep in failed URLs if Phase 2 also fails
+                phase2_failed_urls.append(failed_url)
+
+        # Add Phase 2 identifiers to result
+        result.identifiers.extend(phase2_identifiers)
+
+        # Update type counts
+        for identifier in phase2_identifiers:
+            if identifier.type == IdentifierType.DOI:
+                result.extraction_stats["doi_count"] += 1
+            elif identifier.type == IdentifierType.PMID:
+                result.extraction_stats["pmid_count"] += 1
+            elif identifier.type == IdentifierType.PMC:
+                result.extraction_stats["pmc_count"] += 1
 
     return result
 

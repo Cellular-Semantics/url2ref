@@ -14,6 +14,9 @@ dependencies = [
     "litellm>=1.79.1",
     "metapub>=0.5.5",
     "pyyaml>=6.0.3",
+    "beautifulsoup4>=4.12.0",
+    "pypdf>=3.17.0",
+    "lxml>=4.9.0",
 ]
 
 [dependency-groups]
@@ -24,6 +27,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pre-commit>=4.3.0",
+    "types-requests>=2.31.0",
 ]
 
 [tool.pytest.ini_options]
