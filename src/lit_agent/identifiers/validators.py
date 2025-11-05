@@ -3,7 +3,7 @@
 import logging
 import re
 import time
-from typing import Any, Dict, Optional, List, Union
+from typing import Any, Dict, Optional
 
 import requests  # type: ignore[import-untyped]
 
