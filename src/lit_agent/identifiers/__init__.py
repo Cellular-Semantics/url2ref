@@ -34,6 +34,8 @@ from .api import (
     extract_identifiers_from_bibliography,
     extract_identifiers_from_url,
     validate_identifier,
+    resolve_bibliography,
+    CitationResolutionResult,
 )
 
 # Demo functionality
@@ -66,6 +68,8 @@ __all__ = [
     "extract_identifiers_from_bibliography",
     "extract_identifiers_from_url",
     "validate_identifier",
+    "resolve_bibliography",
+    "CitationResolutionResult",
     # Demo
     "demo_extraction",
 ]

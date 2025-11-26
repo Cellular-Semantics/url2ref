@@ -1,6 +1,9 @@
 """High-level API functions for academic identifier extraction."""
 
-from typing import List, Dict, Any
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+import json
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional
 
 from .base import IdentifierType, AcademicIdentifier, IdentifierExtractionResult
 from .extractors import JournalURLExtractor
@@ -9,12 +12,32 @@ from .validators import CompositeValidator, NCBIAPIValidator
 from .topic_validator import TopicValidator
 
 
+@dataclass
+class CitationResolutionResult:
+    """Resolved bibliography output mapped to CSL-JSON entries."""
+
+    citations: Dict[str, Dict[str, Any]]
+    stats: Dict[str, Any]
+    failures: List[str]
+
+    def to_json(self) -> str:
+        """Serialize the resolution result to JSON."""
+
+        payload = {
+            "citations": self.citations,
+            "stats": self.stats,
+            "failures": self.failures,
+        }
+        return json.dumps(payload, default=str)
+
+
 def extract_identifiers_from_bibliography(
     urls: List[str],
     use_web_scraping: bool = False,
     use_api_validation: bool = True,
     use_metapub_validation: bool = True,
     use_topic_validation: bool = False,
+    use_pdf_extraction: bool = True,
 ) -> IdentifierExtractionResult:
     """Extract academic identifiers from a list of bibliography URLs.
 
@@ -27,6 +50,7 @@ def extract_identifiers_from_bibliography(
         use_api_validation: Whether to validate identifiers using NCBI API
         use_metapub_validation: Whether to validate identifiers using metapub
         use_topic_validation: Whether to validate topic relevance using LLM analysis
+        use_pdf_extraction: Whether to allow PDF extraction in Phase 2
 
     Returns:
         IdentifierExtractionResult containing all extracted identifiers and statistics
@@ -76,6 +100,8 @@ def extract_identifiers_from_bibliography(
             try:
                 # Choose extractor based on URL type
                 if pdf_extractor.is_pdf_url(failed_url):
+                    if not use_pdf_extraction:
+                        continue
                     identifiers = pdf_extractor.extract_from_url(failed_url)
                 else:
                     identifiers = web_extractor.extract_from_url(failed_url)
@@ -258,3 +284,268 @@ def validate_identifier(
         "identifier_type": identifier_type.value,
         "value": value,
     }
+
+
+def resolve_bibliography(
+    bibliography: Iterable[Any],
+    *,
+    validate: bool = True,
+    scrape: bool = True,
+    pdf: bool = True,
+    topic_validation: bool = False,
+    metadata_lookup: Optional[Callable[[IdentifierType, str], Optional[Dict[str, Any]]]] = None,
+) -> CitationResolutionResult:
+    """Resolve a DeepSearch bibliography to CSL-JSON keyed by source_id.
+
+    Args:
+        bibliography: Iterable of URLs or mappings with ``source_id`` and ``url`` keys.
+        validate: Whether to run API/metapub validation when extracting identifiers.
+        scrape: Whether to enable web scraping for failed URLs.
+        pdf: Whether to enable PDF extraction during scraping.
+        topic_validation: Whether to run topic validation.
+        metadata_lookup: Optional callable to enrich metadata (identifier_type, value) -> metadata dict.
+
+    Returns:
+        CitationResolutionResult with CSL-JSON citations keyed by source_id and resolution stats.
+    """
+
+    entries = _normalize_bibliography_entries(bibliography)
+    urls = [entry["url"] for entry in entries]
+
+    extraction_result = extract_identifiers_from_bibliography(
+        urls,
+        use_web_scraping=scrape,
+        use_api_validation=validate,
+        use_metapub_validation=validate,
+        use_topic_validation=topic_validation,
+        use_pdf_extraction=pdf,
+    )
+
+    grouped_identifiers: Dict[str, List[AcademicIdentifier]] = defaultdict(list)
+    for identifier in extraction_result.identifiers:
+        grouped_identifiers[identifier.source_url].append(identifier)
+
+    citations: Dict[str, Dict[str, Any]] = {}
+    failures: List[str] = []
+    method_counter: Counter[str] = Counter()
+    confidence_values: List[float] = []
+
+    for entry in entries:
+        source_id = entry["source_id"]
+        url = entry["url"]
+        identifiers = grouped_identifiers.get(url, [])
+
+        citation = _build_csl_citation(
+            source_id=source_id,
+            url=url,
+            identifiers=identifiers,
+            metadata_lookup=metadata_lookup,
+            validate=validate,
+        )
+
+        citations[source_id] = citation
+
+        method_counter.update(citation["resolution"].get("methods", []))
+        if identifiers:
+            confidence_values.extend([identifier.confidence for identifier in identifiers])
+        else:
+            failures.append(source_id)
+
+    stats = {
+        "total": len(entries),
+        "resolved": len(entries) - len(failures),
+        "unresolved": len(failures),
+        "methods": dict(method_counter),
+        "average_confidence": round(sum(confidence_values) / len(confidence_values), 2)
+        if confidence_values
+        else 0.0,
+    }
+
+    return CitationResolutionResult(
+        citations=citations,
+        stats=stats,
+        failures=failures,
+    )
+
+
+def _normalize_bibliography_entries(bibliography: Iterable[Any]) -> List[Dict[str, str]]:
+    """Normalize bibliography input to a list of ``{"source_id", "url"}`` dicts."""
+
+    normalized_entries: List[Dict[str, str]] = []
+    for index, entry in enumerate(bibliography, start=1):
+        if isinstance(entry, Mapping):
+            source_id = str(entry.get("source_id") or entry.get("id") or index)
+            url = str(entry.get("url")) if entry.get("url") is not None else ""
+        else:
+            source_id = str(index)
+            url = str(entry)
+
+        normalized_entries.append({"source_id": source_id, "url": url})
+
+    return normalized_entries
+
+
+def _build_csl_citation(
+    *,
+    source_id: str,
+    url: str,
+    identifiers: List[AcademicIdentifier],
+    metadata_lookup: Optional[Callable[[IdentifierType, str], Optional[Dict[str, Any]]]],
+    validate: bool,
+) -> Dict[str, Any]:
+    """Convert extracted identifiers into a CSL-JSON-like dict."""
+
+    citation: Dict[str, Any] = {
+        "id": source_id,
+        "URL": url,
+        "type": "article-journal",
+        "resolution": {
+            "confidence": max((identifier.confidence for identifier in identifiers), default=0.0),
+            "methods": sorted({identifier.extraction_method.value for identifier in identifiers}),
+            "validation": _build_validation_status(validate, bool(identifiers)),
+            "errors": [],
+            "source_url": url,
+            "canonical_id": None,
+        },
+    }
+
+    for identifier in identifiers:
+        if identifier.type == IdentifierType.DOI:
+            citation["DOI"] = identifier.value
+        elif identifier.type == IdentifierType.PMID:
+            citation["PMID"] = identifier.value
+        elif identifier.type == IdentifierType.PMC:
+            citation["PMCID"] = identifier.value
+
+    if not identifiers:
+        citation["resolution"]["errors"].append("no identifiers extracted")
+        return citation
+
+    preferred_identifier = _select_preferred_identifier(identifiers)
+
+    metadata = None
+    if metadata_lookup:
+        try:
+            metadata = metadata_lookup(preferred_identifier.type, preferred_identifier.value)
+        except Exception as exc:  # pragma: no cover - defensive
+            citation["resolution"]["errors"].append(f"metadata lookup failed: {exc}")
+    elif validate:
+        metadata_validator = NCBIAPIValidator()
+        try:
+            metadata = metadata_validator.get_article_metadata(
+                preferred_identifier.type, preferred_identifier.value
+            )
+            citation["resolution"]["validation"]["ncbi"] = "passed" if metadata else "failed"
+        except Exception as exc:  # pragma: no cover - defensive
+            citation["resolution"]["errors"].append(f"metadata lookup failed: {exc}")
+            citation["resolution"]["validation"]["ncbi"] = "failed"
+
+    if metadata:
+        _apply_metadata_to_citation(citation, metadata)
+        if "metadata_lookup" not in citation["resolution"]["methods"]:
+            citation["resolution"]["methods"].append("metadata_lookup")
+
+    return citation
+
+
+def _build_validation_status(validate: bool, has_identifiers: bool) -> Dict[str, str]:
+    """Construct validation status map for ncbi/metapub."""
+
+    if not validate:
+        return {"ncbi": "skipped", "metapub": "skipped"}
+
+    return {"ncbi": "unknown" if has_identifiers else "failed", "metapub": "unknown"}
+
+
+def _select_preferred_identifier(identifiers: List[AcademicIdentifier]) -> AcademicIdentifier:
+    """Choose the best identifier for metadata lookup (PMID > PMC > DOI)."""
+
+    priority = {IdentifierType.PMID: 0, IdentifierType.PMC: 1, IdentifierType.DOI: 2}
+    return sorted(identifiers, key=lambda identifier: priority.get(identifier.type, 99))[0]
+
+
+def _apply_metadata_to_citation(citation: Dict[str, Any], metadata: Dict[str, Any]) -> None:
+    """Map metadata dictionary into CSL fields on the citation dict."""
+
+    if title := metadata.get("title"):
+        citation["title"] = title
+
+    if journal := metadata.get("journal"):
+        citation["container-title"] = journal
+
+    if pubdate := metadata.get("pubdate"):
+        date_parts = _parse_pubdate(pubdate)
+        if date_parts:
+            citation["issued"] = {"date-parts": [date_parts]}
+
+    if authors := metadata.get("authors"):
+        citation["author"] = _parse_authors(authors)
+
+    for field in ["volume", "issue", "pages"]:
+        if metadata.get(field):
+            citation[field] = metadata[field]
+
+    if metadata.get("doi"):
+        citation.setdefault("DOI", metadata["doi"])
+    if metadata.get("pmid"):
+        citation.setdefault("PMID", metadata["pmid"])
+    if metadata.get("pmcid"):
+        citation.setdefault("PMCID", metadata["pmcid"])
+
+
+def _parse_pubdate(pubdate: str) -> List[int]:
+    """Parse NCBI-style pubdate strings into date-parts."""
+
+    months = {
+        "jan": 1,
+        "feb": 2,
+        "mar": 3,
+        "apr": 4,
+        "may": 5,
+        "jun": 6,
+        "jul": 7,
+        "aug": 8,
+        "sep": 9,
+        "oct": 10,
+        "nov": 11,
+        "dec": 12,
+    }
+
+    tokens = pubdate.replace(",", " ").split()
+    date_parts: List[int] = []
+
+    for token in tokens:
+        lower_token = token.lower()
+        if lower_token in months:
+            date_parts.append(months[lower_token])
+        else:
+            try:
+                date_parts.append(int(token))
+            except ValueError:
+                continue
+
+    if not date_parts and pubdate.isdigit():
+        date_parts.append(int(pubdate))
+
+    return date_parts[:3]
+
+
+def _parse_authors(authors: Iterable[str]) -> List[Dict[str, str]]:
+    """Convert a list of author strings into CSL author dicts."""
+
+    parsed_authors: List[Dict[str, str]] = []
+
+    for author in authors:
+        if not author:
+            continue
+
+        tokens = author.replace(",", " ").split()
+        if not tokens:
+            continue
+
+        family = tokens[0]
+        given = " ".join(tokens[1:]) if len(tokens) > 1 else ""
+
+        parsed_authors.append({"family": family, "given": given})
+
+    return parsed_authors

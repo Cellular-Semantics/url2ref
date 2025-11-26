@@ -54,6 +54,38 @@ NCBI_API_KEY=your_ncbi_key        # Optional but recommended for higher rate lim
 
 ## Usage
 
+### Bibliography → CSL-JSON mapping
+
+Take a DeepSearch-style bibliography (URLs, optionally with `source_id`) and return CSL-JSON keyed by the original reference numbers:
+
+```python
+from lit_agent.identifiers import resolve_bibliography
+
+bibliography = [
+    {"source_id": "1", "url": "https://pubmed.ncbi.nlm.nih.gov/37674083/"},
+    {"source_id": "2", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11239014/"},
+    {"source_id": "3", "url": "https://doi.org/10.1038/s41586-023-06502-w"},
+]
+
+result = resolve_bibliography(
+    bibliography,
+    validate=True,     # NCBI/metapub validation + metadata fetch
+    scrape=False,      # Enable if you want web/PDF scraping for failures
+    pdf=False,
+    topic_validation=False,
+)
+
+print(result.citations["1"]["PMID"])     # "37674083"
+print(result.citations["2"]["PMCID"])    # "PMC11239014"
+print(result.citations["3"]["DOI"])      # "10.1038/s41586-023-06502-w"
+print(result.citations["1"]["resolution"])  # methods, confidence, validation, errors
+```
+
+Each citation is CSL-JSON–compatible with a custom `resolution` block:
+- `id` is the original `source_id` (or 1-based string if absent)
+- `URL`, identifiers (`DOI`/`PMID`/`PMCID`), optional metadata (`title`, `author`, `container-title`, `issued`, etc.)
+- `resolution`: `confidence`, `methods`, `validation` statuses, `errors`, `source_url`, optional `canonical_id`
+
 ### Academic Identifier Extraction
 
 Extract DOI, PMID, and PMC identifiers from academic URLs with comprehensive validation:
@@ -353,4 +385,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [LiteLLM](https://github.com/BerriAI/litellm) for unified LLM API access
 - Uses [uv](https://github.com/astral-sh/uv) for fast Python package management
 - Code quality maintained with [black](https://github.com/psf/black) and [ruff](https://github.com/astral-sh/ruff)
-
