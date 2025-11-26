@@ -38,6 +38,9 @@ markers = [
   "unit: fast, isolated tests",
   "integration: tests that hit real services or I/O"
 ]
+filterwarnings = [
+  "ignore:invalid escape sequence.*docopt.*:SyntaxWarning",
+]
 
 [tool.coverage.run]
 branch = true
@@ -45,4 +48,3 @@ source = ["src/lit_agent"]
 
 [tool.coverage.report]
 skip_empty = true
-
