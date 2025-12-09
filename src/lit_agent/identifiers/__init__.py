@@ -36,6 +36,7 @@ from .api import (
     validate_identifier,
     resolve_bibliography,
     CitationResolutionResult,
+    render_bibliography_to_strings,
 )
 
 # Demo functionality
@@ -70,6 +71,7 @@ __all__ = [
     "validate_identifier",
     "resolve_bibliography",
     "CitationResolutionResult",
+    "render_bibliography_to_strings",
     # Demo
     "demo_extraction",
 ]

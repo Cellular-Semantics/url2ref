@@ -36,7 +36,11 @@ def test_resolve_bibliography_live_ncbi_lookup():
     assert pubmed_citation["PMID"] == "37674083"
     assert pubmed_citation["resolution"]["confidence"] > 0.8
     assert "url_pattern" in pubmed_citation["resolution"]["methods"]
-    assert pubmed_citation["resolution"]["validation"]["ncbi"] in {"passed", "unknown", "failed"}
+    assert pubmed_citation["resolution"]["validation"]["ncbi"] in {
+        "passed",
+        "unknown",
+        "failed",
+    }
 
     pmc_citation = result.citations["pmc"]
     assert pmc_citation["PMCID"] == "PMC11239014"

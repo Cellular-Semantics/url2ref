@@ -293,7 +293,9 @@ def resolve_bibliography(
     scrape: bool = True,
     pdf: bool = True,
     topic_validation: bool = False,
-    metadata_lookup: Optional[Callable[[IdentifierType, str], Optional[Dict[str, Any]]]] = None,
+    metadata_lookup: Optional[
+        Callable[[IdentifierType, str], Optional[Dict[str, Any]]]
+    ] = None,
 ) -> CitationResolutionResult:
     """Resolve a DeepSearch bibliography to CSL-JSON keyed by source_id.
 
@@ -347,7 +349,9 @@ def resolve_bibliography(
 
         method_counter.update(citation["resolution"].get("methods", []))
         if identifiers:
-            confidence_values.extend([identifier.confidence for identifier in identifiers])
+            confidence_values.extend(
+                [identifier.confidence for identifier in identifiers]
+            )
         else:
             failures.append(source_id)
 
@@ -356,9 +360,11 @@ def resolve_bibliography(
         "resolved": len(entries) - len(failures),
         "unresolved": len(failures),
         "methods": dict(method_counter),
-        "average_confidence": round(sum(confidence_values) / len(confidence_values), 2)
-        if confidence_values
-        else 0.0,
+        "average_confidence": (
+            round(sum(confidence_values) / len(confidence_values), 2)
+            if confidence_values
+            else 0.0
+        ),
     }
 
     return CitationResolutionResult(
@@ -368,7 +374,9 @@ def resolve_bibliography(
     )
 
 
-def _normalize_bibliography_entries(bibliography: Iterable[Any]) -> List[Dict[str, str]]:
+def _normalize_bibliography_entries(
+    bibliography: Iterable[Any],
+) -> List[Dict[str, str]]:
     """Normalize bibliography input to a list of ``{"source_id", "url"}`` dicts."""
 
     normalized_entries: List[Dict[str, str]] = []
@@ -390,7 +398,9 @@ def _build_csl_citation(
     source_id: str,
     url: str,
     identifiers: List[AcademicIdentifier],
-    metadata_lookup: Optional[Callable[[IdentifierType, str], Optional[Dict[str, Any]]]],
+    metadata_lookup: Optional[
+        Callable[[IdentifierType, str], Optional[Dict[str, Any]]]
+    ],
     validate: bool,
 ) -> Dict[str, Any]:
     """Convert extracted identifiers into a CSL-JSON-like dict."""
@@ -400,8 +410,12 @@ def _build_csl_citation(
         "URL": url,
         "type": "article-journal",
         "resolution": {
-            "confidence": max((identifier.confidence for identifier in identifiers), default=0.0),
-            "methods": sorted({identifier.extraction_method.value for identifier in identifiers}),
+            "confidence": max(
+                (identifier.confidence for identifier in identifiers), default=0.0
+            ),
+            "methods": sorted(
+                {identifier.extraction_method.value for identifier in identifiers}
+            ),
             "validation": _build_validation_status(validate, bool(identifiers)),
             "errors": [],
             "source_url": url,
@@ -426,7 +440,9 @@ def _build_csl_citation(
     metadata = None
     if metadata_lookup:
         try:
-            metadata = metadata_lookup(preferred_identifier.type, preferred_identifier.value)
+            metadata = metadata_lookup(
+                preferred_identifier.type, preferred_identifier.value
+            )
         except Exception as exc:  # pragma: no cover - defensive
             citation["resolution"]["errors"].append(f"metadata lookup failed: {exc}")
     elif validate:
@@ -435,7 +451,9 @@ def _build_csl_citation(
             metadata = metadata_validator.get_article_metadata(
                 preferred_identifier.type, preferred_identifier.value
             )
-            citation["resolution"]["validation"]["ncbi"] = "passed" if metadata else "failed"
+            citation["resolution"]["validation"]["ncbi"] = (
+                "passed" if metadata else "failed"
+            )
         except Exception as exc:  # pragma: no cover - defensive
             citation["resolution"]["errors"].append(f"metadata lookup failed: {exc}")
             citation["resolution"]["validation"]["ncbi"] = "failed"
@@ -457,14 +475,20 @@ def _build_validation_status(validate: bool, has_identifiers: bool) -> Dict[str,
     return {"ncbi": "unknown" if has_identifiers else "failed", "metapub": "unknown"}
 
 
-def _select_preferred_identifier(identifiers: List[AcademicIdentifier]) -> AcademicIdentifier:
+def _select_preferred_identifier(
+    identifiers: List[AcademicIdentifier],
+) -> AcademicIdentifier:
     """Choose the best identifier for metadata lookup (PMID > PMC > DOI)."""
 
     priority = {IdentifierType.PMID: 0, IdentifierType.PMC: 1, IdentifierType.DOI: 2}
-    return sorted(identifiers, key=lambda identifier: priority.get(identifier.type, 99))[0]
+    return sorted(
+        identifiers, key=lambda identifier: priority.get(identifier.type, 99)
+    )[0]
 
 
-def _apply_metadata_to_citation(citation: Dict[str, Any], metadata: Dict[str, Any]) -> None:
+def _apply_metadata_to_citation(
+    citation: Dict[str, Any], metadata: Dict[str, Any]
+) -> None:
     """Map metadata dictionary into CSL fields on the citation dict."""
 
     if title := metadata.get("title"):
@@ -549,3 +573,124 @@ def _parse_authors(authors: Iterable[str]) -> List[Dict[str, str]]:
         parsed_authors.append({"family": family, "given": given})
 
     return parsed_authors
+
+
+def render_bibliography_to_strings(
+    resolution_result: CitationResolutionResult,
+    style: str = "vancouver",
+    locale: str = "en-US",
+) -> tuple[List[str], Dict[str, Any]]:
+    """Render CSL-JSON citations to compact strings using citeproc if available.
+
+    Falls back to a lightweight formatter when citeproc-py is not installed or fails.
+
+    Args:
+        resolution_result: Output of ``resolve_bibliography``.
+        style: CSL style to use (e.g., ``vancouver``, ``ieee``, ``ama``).
+        locale: Locale for the style (default: ``en-US``).
+
+    Returns:
+        Tuple of (rendered strings, metadata describing renderer and style).
+    """
+
+    try:
+        (
+            CitationStylesStyle,
+            CitationStylesBibliography,
+            Citation,
+            CitationItem,
+            formatter,
+            CiteProcJSON,
+        ) = _import_citeproc()
+    except ImportError as exc:
+        return _render_compact(resolution_result), {
+            "renderer": "fallback",
+            "style": style,
+            "locale": locale,
+            "error": str(exc),
+        }
+
+    try:
+        entries = list(resolution_result.citations.values())
+        style_obj = CitationStylesStyle(style, validate=False, locale=locale)
+        source = CiteProcJSON(entries)
+        bibliography = CitationStylesBibliography(style_obj, source, formatter.plain)
+
+        for item in source.items:
+            citation = Citation([CitationItem(item.id)])
+            bibliography.register(citation)
+
+        rendered = [str(entry) for entry in bibliography.bibliography()]
+        return rendered, {"renderer": "citeproc-py", "style": style, "locale": locale}
+    except Exception as exc:  # pragma: no cover - defensive
+        return _render_compact(resolution_result), {
+            "renderer": "fallback",
+            "style": style,
+            "locale": locale,
+            "error": str(exc),
+        }
+
+
+def _render_compact(resolution_result: CitationResolutionResult) -> List[str]:
+    """Minimal, dependency-free compact bibliography formatter."""
+
+    rendered = []
+    for citation in resolution_result.citations.values():
+        parts = [f"[{citation.get('id', '?')}]"]
+
+        authors = citation.get("author") or []
+        if authors:
+            first_author = authors[0]
+            name = first_author.get("family") or first_author.get("literal") or ""
+            if len(authors) > 1 and name:
+                name = f"{name} et al."
+            if name:
+                parts.append(name)
+
+        if citation.get("title"):
+            parts.append(citation["title"])
+
+        year = _extract_year(citation)
+        if year:
+            parts.append(str(year))
+
+        id_field = citation.get("DOI") or citation.get("PMID") or citation.get("PMCID")
+        if id_field:
+            parts.append(id_field)
+        elif citation.get("URL"):
+            parts.append(citation["URL"])
+
+        rendered.append(" ".join(parts))
+
+    return rendered
+
+
+def _extract_year(citation: Dict[str, Any]) -> Optional[int]:
+    """Pull a year from a CSL citation if present."""
+
+    issued = citation.get("issued", {})
+    date_parts = issued.get("date-parts") if isinstance(issued, dict) else None
+    if date_parts and isinstance(date_parts, list) and date_parts and date_parts[0]:
+        try:
+            return int(date_parts[0][0])
+        except Exception:
+            return None
+    return None
+
+
+def _import_citeproc():
+    """Import citeproc modules, isolated for easier testing."""
+
+    import importlib
+
+    citeproc = importlib.import_module("citeproc")
+    citeproc_json = importlib.import_module("citeproc.source.json")
+
+    return (
+        citeproc.CitationStylesStyle,
+        citeproc.CitationStylesBibliography,
+        citeproc.Citation,
+        citeproc.CitationItem,
+        citeproc.formatter,
+        citeproc_json.CiteProcJSON,
+    )

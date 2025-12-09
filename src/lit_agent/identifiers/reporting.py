@@ -123,10 +123,11 @@ class ValidationReporter:
                     r.extraction_stats.get("failed_extractions", 0) for r in results
                 ),
                 "avg_success_rate": 0.0,
-                "avg_processing_time": sum(r.processing_time for r in results)
-                / len(results)
-                if results
-                else 0.0,
+                "avg_processing_time": (
+                    sum(r.processing_time for r in results) / len(results)
+                    if results
+                    else 0.0
+                ),
             },
             "identifier_types": {
                 "doi_count": len(
@@ -210,17 +211,21 @@ class ValidationReporter:
                     topic_stats = {
                         "total_validated": len(topic_validated),
                         "relevant_papers": relevant_count,
-                        "relevance_rate": relevant_count / len(topic_validated)
-                        if topic_validated
-                        else 0,
-                        "avg_topic_confidence": sum(
-                            i.topic_validation.get("confidence", 0)
-                            for i in topic_validated
-                            if i.topic_validation
-                        )
-                        / len(topic_validated)
-                        if topic_validated
-                        else 0,
+                        "relevance_rate": (
+                            relevant_count / len(topic_validated)
+                            if topic_validated
+                            else 0
+                        ),
+                        "avg_topic_confidence": (
+                            sum(
+                                i.topic_validation.get("confidence", 0)
+                                for i in topic_validated
+                                if i.topic_validation
+                            )
+                            / len(topic_validated)
+                            if topic_validated
+                            else 0
+                        ),
                     }
             else:
                 avg_confidence = 0
@@ -251,27 +256,29 @@ class ValidationReporter:
         summary = {
             "total_identifiers": total_successes,
             "total_failed_urls": len(failed_urls),
-            "overall_success_rate": total_successes / total_attempts
-            if total_attempts > 0
-            else 0,
+            "overall_success_rate": (
+                total_successes / total_attempts if total_attempts > 0 else 0
+            ),
             "extraction_method_breakdown": {
-                "url_pattern_percentage": len(by_method[ExtractionMethod.URL_PATTERN])
-                / total_successes
-                * 100
-                if total_successes > 0
-                else 0,
-                "web_scraping_percentage": len(by_method[ExtractionMethod.WEB_SCRAPING])
-                / total_successes
-                * 100
-                if total_successes > 0
-                else 0,
-                "pdf_extraction_percentage": len(
-                    by_method[ExtractionMethod.PDF_EXTRACTION]
-                )
-                / total_successes
-                * 100
-                if total_successes > 0
-                else 0,
+                "url_pattern_percentage": (
+                    len(by_method[ExtractionMethod.URL_PATTERN]) / total_successes * 100
+                    if total_successes > 0
+                    else 0
+                ),
+                "web_scraping_percentage": (
+                    len(by_method[ExtractionMethod.WEB_SCRAPING])
+                    / total_successes
+                    * 100
+                    if total_successes > 0
+                    else 0
+                ),
+                "pdf_extraction_percentage": (
+                    len(by_method[ExtractionMethod.PDF_EXTRACTION])
+                    / total_successes
+                    * 100
+                    if total_successes > 0
+                    else 0
+                ),
             },
         }
 
@@ -953,9 +960,9 @@ class ValidationReporter:
 
         assessment: Dict[str, Any] = {
             "extraction_grade": self._grade_score(extraction_f1),
-            "topic_grade": self._grade_score(topic_f1)
-            if topic_f1 is not None
-            else "N/A",
+            "topic_grade": (
+                self._grade_score(topic_f1) if topic_f1 is not None else "N/A"
+            ),
         }
 
         if topic_f1 is not None:

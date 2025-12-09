@@ -86,6 +86,22 @@ Each citation is CSL-JSON–compatible with a custom `resolution` block:
 - `URL`, identifiers (`DOI`/`PMID`/`PMCID`), optional metadata (`title`, `author`, `container-title`, `issued`, etc.)
 - `resolution`: `confidence`, `methods`, `validation` statuses, `errors`, `source_url`, optional `canonical_id`
 
+Render to compact text with citeproc-py (optional dependency):
+
+```bash
+uv add --dev citeproc-py
+```
+
+```python
+from lit_agent.identifiers import render_bibliography_to_strings
+
+rendered, meta = render_bibliography_to_strings(result, style="vancouver")
+for line in rendered:
+    print(line)  # e.g., "[1] Doe et al. 2024 Example Paper 10.1038/s41586-023-06502-w"
+```
+
+If citeproc-py is not installed, the helper falls back to a minimal compact formatter.
+
 ### Academic Identifier Extraction
 
 Extract DOI, PMID, and PMC identifiers from academic URLs with comprehensive validation:

@@ -40,9 +40,7 @@ def demo_extraction(sample_urls: Optional[List[str]] = None) -> None:
         confidence_emoji = (
             "🟢"
             if identifier.confidence >= 0.9
-            else "🟡"
-            if identifier.confidence >= 0.7
-            else "🔴"
+            else "🟡" if identifier.confidence >= 0.7 else "🔴"
         )
         print(
             f"   {confidence_emoji} {identifier.type.value.upper()}: {identifier.value}"
