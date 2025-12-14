@@ -66,8 +66,8 @@ def test_render_bibliography_vancouver_style():
     rendered, meta = render_bibliography_to_strings(result, style="vancouver")
 
     # Should use citeproc renderer with citeproc-py-styles installed
-    assert meta["renderer"] == "citeproc-py", (
-        "Expected citeproc-py renderer but got fallback. "
+    assert meta["renderer"] == "citeproc", (
+        "Expected citeproc renderer but got fallback. "
         "Ensure citeproc-py-styles is installed: pip install citeproc-py-styles"
     )
     assert meta["style"] == "vancouver"
@@ -134,7 +134,7 @@ def test_render_bibliography_chicago_style():
 
     rendered, meta = render_bibliography_to_strings(result, style="chicago")
 
-    assert meta["renderer"] == "citeproc-py"
+    assert meta["renderer"] == "citeproc"
     assert meta["style"] == "chicago"
     assert len(rendered) == 1
     assert rendered[0]  # Non-empty
@@ -198,7 +198,7 @@ def test_render_bibliography_empty_citations():
     rendered, meta = render_bibliography_to_strings(result, style="vancouver")
 
     # Even with no citations, should use citeproc if available
-    assert meta["renderer"] in ["citeproc-py", "fallback"]
+    assert meta["renderer"] in ["citeproc", "fallback"]
     assert meta["style"] == "vancouver"
     assert len(rendered) == 0, "Should have no bibliography entries"
 
@@ -224,6 +224,6 @@ def test_render_bibliography_with_locale():
         result, style="vancouver", locale="en-GB"
     )
 
-    assert meta["renderer"] == "citeproc-py"
+    assert meta["renderer"] == "citeproc"
     assert meta["locale"] == "en-GB"
     assert len(rendered) == 1

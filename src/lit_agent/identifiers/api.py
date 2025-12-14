@@ -611,20 +611,17 @@ def render_bibliography_to_strings(
         }
 
     try:
-        entries = _prepare_citeproc_entries(
-            resolution_result.citations.values(),
-        )
-        style_name = _resolve_csl_style(style)
-        style_obj = CitationStylesStyle(style_name, validate=False, locale=locale)
+        entries = list(resolution_result.citations.values())
+        style_obj = CitationStylesStyle(style, validate=False, locale=locale)
         source = CiteProcJSON(entries)
         bibliography = CitationStylesBibliography(style_obj, source, formatter.plain)
 
-        for item_id in source:
-            citation = Citation([CitationItem(item_id)])
+        for item in source.items:
+            citation = Citation([CitationItem(item.id)])
             bibliography.register(citation)
 
         rendered = [str(entry) for entry in bibliography.bibliography()]
-        return rendered, {"renderer": "citeproc", "style": style, "locale": locale}
+        return rendered, {"renderer": "citeproc-py", "style": style, "locale": locale}
     except Exception as exc:  # pragma: no cover - defensive
         return _render_compact(resolution_result), {
             "renderer": "fallback",
@@ -679,45 +676,6 @@ def _extract_year(citation: Dict[str, Any]) -> Optional[int]:
         except Exception:
             return None
     return None
-
-
-def _prepare_citeproc_entries(
-    citations: Iterable[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    """Ensure minimal CSL fields are present for citeproc rendering."""
-
-    prepared: List[Dict[str, Any]] = []
-    for index, citation in enumerate(citations, start=1):
-        normalized = dict(citation)
-
-        citation_id = normalized.get("id")
-        normalized["id"] = (
-            str(citation_id) if citation_id not in [None, ""] else str(index)
-        )
-
-        if not normalized.get("type"):
-            normalized["type"] = "article-journal"
-
-        # Remove internal metadata that citeproc does not understand
-        normalized.pop("resolution", None)
-
-        # citeproc expects an iterable for author names
-        if normalized.get("author") is None:
-            normalized["author"] = []
-
-        prepared.append(normalized)
-
-    return prepared
-
-
-def _resolve_csl_style(style: str) -> str:
-    """Map common aliases to valid CSL style identifiers."""
-
-    aliases = {
-        "chicago": "chicago-author-date",
-    }
-    normalized = style.lower()
-    return aliases.get(normalized, normalized)
 
 
 def _import_citeproc():
