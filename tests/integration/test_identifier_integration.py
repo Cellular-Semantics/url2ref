@@ -1,8 +1,18 @@
 import importlib.util
+import os
 import warnings
-
-import pytest
 from unittest.mock import patch
+
+from dotenv import load_dotenv
+import pytest
+
+load_dotenv()
+
+ALLOW_INTEGRATION_FALLBACK = os.getenv("ALLOW_INTEGRATION_FALLBACK", "").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 from lit_agent.identifiers import (
     extract_identifiers_from_bibliography,
@@ -59,24 +69,33 @@ class TestIdentifierAPIIntegration:
                     assert confidence >= 0.9
 
             except Exception as e:
-                warnings.warn(
-                    f"NCBI API validation failed for {id_type_str} {value}: {e}"
-                )
-                print("--- NCBI API Validation Results (FAILED - using mock) ---")
-                print(
-                    f"{id_type_str.upper()} {value}: API call failed, using format validation"
-                )
+                if ALLOW_INTEGRATION_FALLBACK:
+                    warnings.warn(
+                        f"NCBI API validation failed for {id_type_str} {value}: {e}"
+                    )
+                    print("--- NCBI API Validation Results (FAILED - using mock) ---")
+                    print(
+                        f"{id_type_str.upper()} {value}: API call failed, using format validation"
+                    )
 
-                # Fall back to format validation test
-                from lit_agent.identifiers.validators import FormatValidator
+                    # Fall back to format validation test
+                    from lit_agent.identifiers.validators import FormatValidator
 
-                format_validator = FormatValidator()
-                assert format_validator.validate_identifier(id_type, value)
+                    format_validator = FormatValidator()
+                    assert format_validator.validate_identifier(id_type, value)
+                else:
+                    pytest.fail(
+                        f"NCBI API validation failed for {id_type_str} {value}: {e}"
+                    )
 
     def test_metapub_validation_with_known_identifiers(self, sample_known_identifiers):
         """Test metapub validation with known valid identifiers."""
         if importlib.util.find_spec("metapub") is None:
-            pytest.skip("metapub not available")
+            if ALLOW_INTEGRATION_FALLBACK:
+                pytest.skip("metapub not available (allowed fallback)")
+            pytest.fail(
+                "metapub not available; install dependency or set ALLOW_INTEGRATION_FALLBACK=1"
+            )
 
         validator = MetapubValidator()
 
@@ -97,9 +116,14 @@ class TestIdentifierAPIIntegration:
                     assert confidence >= 0.9
 
             except Exception as e:
-                warnings.warn(
-                    f"Metapub validation failed for {id_type_str} {value}: {e}"
-                )
+                if ALLOW_INTEGRATION_FALLBACK:
+                    warnings.warn(
+                        f"Metapub validation failed for {id_type_str} {value}: {e}"
+                    )
+                else:
+                    pytest.fail(
+                        f"Metapub validation failed for {id_type_str} {value}: {e}"
+                    )
 
     def test_extraction_with_api_validation(self, sample_urls_with_identifiers):
         """Test extraction with real API validation when available."""
@@ -132,20 +156,23 @@ class TestIdentifierAPIIntegration:
                 )
 
         except Exception as e:
-            warnings.warn(f"API validation test failed: {e}")
-            print("--- Extraction with API Validation (FAILED - using mock) ---")
+            if ALLOW_INTEGRATION_FALLBACK:
+                warnings.warn(f"API validation test failed: {e}")
+                print("--- Extraction with API Validation (FAILED - using mock) ---")
 
-            # Fall back to extraction without API validation
-            result = extract_identifiers_from_bibliography(
-                sample_urls_with_identifiers,
-                use_api_validation=False,
-                use_metapub_validation=False,
-            )
+                # Fall back to extraction without API validation
+                result = extract_identifiers_from_bibliography(
+                    sample_urls_with_identifiers,
+                    use_api_validation=False,
+                    use_metapub_validation=False,
+                )
 
-            assert len(result.identifiers) > 0
-            print(
-                f"Fallback extraction successful: {len(result.identifiers)} identifiers"
-            )
+                assert len(result.identifiers) > 0
+                print(
+                    f"Fallback extraction successful: {len(result.identifiers)} identifiers"
+                )
+            else:
+                pytest.fail(f"API validation test failed: {e}")
 
     def test_single_url_extraction_with_validation(self):
         """Test single URL extraction with validation."""
@@ -172,14 +199,17 @@ class TestIdentifierAPIIntegration:
                 assert identifier.value == "37674083"
 
         except Exception as e:
-            warnings.warn(f"Single URL validation test failed: {e}")
-            print("--- Single URL Extraction (FAILED - using mock) ---")
+            if ALLOW_INTEGRATION_FALLBACK:
+                warnings.warn(f"Single URL validation test failed: {e}")
+                print("--- Single URL Extraction (FAILED - using mock) ---")
 
-            # Fall back without validation
-            identifiers = extract_identifiers_from_url(test_url)
-            assert len(identifiers) > 0
-            assert identifiers[0].type == IdentifierType.PMID
-            assert identifiers[0].value == "37674083"
+                # Fall back without validation
+                identifiers = extract_identifiers_from_url(test_url)
+                assert len(identifiers) > 0
+                assert identifiers[0].type == IdentifierType.PMID
+                assert identifiers[0].value == "37674083"
+            else:
+                pytest.fail(f"Single URL validation test failed: {e}")
 
     def test_validation_function_with_api(self, sample_known_identifiers):
         """Test standalone validation function with API."""
@@ -200,9 +230,14 @@ class TestIdentifierAPIIntegration:
                 assert result["value"] == value
 
             except Exception as e:
-                warnings.warn(
-                    f"Standalone validation failed for {id_type_str} {value}: {e}"
-                )
+                if ALLOW_INTEGRATION_FALLBACK:
+                    warnings.warn(
+                        f"Standalone validation failed for {id_type_str} {value}: {e}"
+                    )
+                else:
+                    pytest.fail(
+                        f"Standalone validation failed for {id_type_str} {value}: {e}"
+                    )
 
 
 @pytest.mark.integration
@@ -235,8 +270,11 @@ class TestAPIRateLimiting:
             assert elapsed > 0
 
         except Exception as e:
-            warnings.warn(f"Rate limiting test failed: {e}")
-            print("--- Rate Limiting Test (FAILED - API unavailable) ---")
+            if ALLOW_INTEGRATION_FALLBACK:
+                warnings.warn(f"Rate limiting test failed: {e}")
+                print("--- Rate Limiting Test (FAILED - API unavailable) ---")
+            else:
+                pytest.fail(f"Rate limiting test failed: {e}")
 
     def test_api_timeout_handling(self):
         """Test API timeout handling."""
