@@ -104,8 +104,8 @@ def test_render_bibliography_apa_style():
 
     rendered, meta = render_bibliography_to_strings(result, style="apa")
 
-    assert meta["renderer"] == "citeproc", (
-        "Expected citeproc renderer. Ensure citeproc-py-styles is installed."
+    assert meta["renderer"] == "citeproc-py", (
+        "Expected citeproc-py renderer. Ensure citeproc-py-styles is installed."
     )
     assert meta["style"] == "apa"
     assert len(rendered) == 1
@@ -173,7 +173,7 @@ def test_render_bibliography_multiple_citations():
 
     rendered, meta = render_bibliography_to_strings(result, style="vancouver")
 
-    assert meta["renderer"] == "citeproc"
+    assert meta["renderer"] == "citeproc-py"
     assert len(rendered) == 3, "Should have three bibliography entries"
 
     # Check all entries are non-empty

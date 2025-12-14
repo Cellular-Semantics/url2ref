@@ -624,7 +624,7 @@ def render_bibliography_to_strings(
             bibliography.register(citation)
 
         rendered = [str(entry) for entry in bibliography.bibliography()]
-        return rendered, {"renderer": "citeproc", "style": style, "locale": locale}
+        return rendered, {"renderer": "citeproc-py", "style": style, "locale": locale}
     except Exception as exc:  # pragma: no cover - defensive
         return _render_compact(resolution_result), {
             "renderer": "fallback",
