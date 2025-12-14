@@ -224,6 +224,6 @@ def test_render_bibliography_with_locale():
         result, style="vancouver", locale="en-GB"
     )
 
-    assert meta["renderer"] == "citeproc"
+    assert meta["renderer"] == "citeproc-py"
     assert meta["locale"] == "en-GB"
     assert len(rendered) == 1
