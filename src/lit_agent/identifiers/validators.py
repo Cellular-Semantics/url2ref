@@ -430,15 +430,15 @@ class MetapubValidator(IdentifierValidatorBase):
                 return article is not None
 
             elif identifier_type == IdentifierType.DOI:
-                # Try to get PMID for DOI
-                pmid = metapub.CrossRef().pmid_from_doi(value)
+                # Try to get PMID for DOI using CrossRefFetcher
+                pmid = metapub.CrossRefFetcher().pmid_from_doi(value)
                 return pmid is not None
 
             elif identifier_type == IdentifierType.PMC:
-                # PMC validation through conversion
-                pmc_fetcher = metapub.PubMedCentralFetcher()
+                # PMC validation through conversion using pubmedcentral module
+                from metapub import pubmedcentral  # type: ignore[import-untyped]
                 # Try to convert PMC to PMID
-                pmid = pmc_fetcher.pmid_from_pmcid(value)
+                pmid = pubmedcentral.get_pmid_for_otherid(value)
                 return pmid is not None
 
         except ImportError:
