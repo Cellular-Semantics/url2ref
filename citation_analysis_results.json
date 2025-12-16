@@ -1,0 +1,13 @@
+{
+  "summary": {
+    "total": 58,
+    "successful": 57,
+    "partial": 0,
+    "failed": 1,
+    "issues": 0
+  },
+  "issues": [],
+  "failed_urls": [
+    "https://www.proteinatlas.org/ENSG00000137962-ARHGAP29/cancer/glioma"
+  ]
+}
