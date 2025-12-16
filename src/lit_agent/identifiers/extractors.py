@@ -177,6 +177,40 @@ class URLPatternExtractor(IdentifierExtractorBase):
         doi_pattern = r"^10\.\d{4,}/[^\s]+$"
         return bool(re.match(doi_pattern, doi))
 
+    def _strip_file_extensions(self, article_id: str) -> str:
+        """Remove common file extensions from article IDs.
+
+        Args:
+            article_id: Article identifier that may include file extensions
+
+        Returns:
+            Article ID with file extensions removed
+
+        Examples:
+            >>> self._strip_file_extensions("s41467-025-67223-4_reference.pdf")
+            "s41467-025-67223-4"
+            >>> self._strip_file_extensions("s41586-023-06502-w.html")
+            "s41586-023-06502-w"
+            >>> self._strip_file_extensions("s41586-023-06502-w")
+            "s41586-023-06502-w"
+        """
+        # Common file extensions found in journal URLs
+        # Order matters: strip longer patterns first to avoid partial matches
+        extensions = [
+            '_reference.pdf',
+            '_reference.html',
+            '_reference.htm',
+            '.pdf',
+            '.html',
+            '.htm',
+        ]
+
+        for ext in extensions:
+            if article_id.endswith(ext):
+                return article_id[:-len(ext)]
+
+        return article_id
+
     def _calculate_doi_confidence(self, doi: str, url: str) -> float:
         """Calculate confidence score for extracted DOI."""
         confidence = 0.8  # Base confidence for DOI pattern matching
@@ -259,6 +293,8 @@ class JournalURLExtractor(URLPatternExtractor):
 
                     # For some journals, we need to construct the DOI
                     if domain == "nature.com":
-                        return f"10.1038/{potential_doi}"
+                        # Strip file extensions before constructing DOI
+                        article_id = self._strip_file_extensions(potential_doi)
+                        return f"10.1038/{article_id}"
 
         return None
